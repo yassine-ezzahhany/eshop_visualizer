@@ -7,8 +7,8 @@ import {
 } from 'lucide-react';
 
 export default function Dashboard() {
-  // Scenario Selection state (1 or 2)
-  const [scenario, setScenario] = useState(2);
+  // Scenario Selection state (1 or 2) - Scenario 1 set as default
+  const [scenario, setScenario] = useState(1);
 
   // Database status states
   const [statuses, setStatuses] = useState({ globale: 'offline', site1: 'offline', site2: 'offline' });
@@ -22,13 +22,13 @@ export default function Dashboard() {
   const [activeTab, setActiveTab] = useState('insert');
   
   // Forms states - dynamically adjusted when scenario changes
-  const [insertForm, setInsertForm] = useState({ id_ligne_commande: '999960', id_commande: '167', id_produit: '149', quantite: '150', remise: '0.1' });
-  const [updateForm, setUpdateForm] = useState({ id_ligne_commande: '999960', id_produit: '149', quantite: '30', remise: '0.1' });
+  const [insertForm, setInsertForm] = useState({ id_ligne_commande: '999960', id_commande: '167', id_produit: '257', quantite: '120', remise: '0.1' });
+  const [updateForm, setUpdateForm] = useState({ id_ligne_commande: '999960', id_produit: '257', quantite: '120', remise: '0.1' });
   const [deleteForm, setDeleteForm] = useState({ id_ligne_commande: '999960' });
   
   const [dmlLoading, setDmlLoading] = useState(false);
   const [dmlLogs, setDmlLogs] = useState([
-    'System ready. Select scenario and execute DML simulation to trace replication.'
+    'Système prêt. Sélectionnez un scénario et exécutez la simulation DML pour suivre la réplication.'
   ]);
   const [lastRoutedTo, setLastRoutedTo] = useState('none');
 
@@ -47,20 +47,20 @@ export default function Dashboard() {
     // Reset test data suggestions based on scenario
     if (scenario === 1) {
       setDmlLogs([
-        'Switched to Scenario 1 (Category-Based Fragmentation).',
-        '• Site 1: Category 50 & Quantity > 100',
-        '• Site 2: Category 35 & Quantity > 50',
-        'Enter values above to test. Note: Product 257 is Cat 50. Product 149 is Cat 35.'
+        'Passage au Scénario 1 (Fragmentation par Catégorie).',
+        '• Site 1 : Catégorie 50 & Quantité > 100',
+        '• Site 2 : Catégorie 35 & Quantité > 50',
+        'Saisissez des valeurs ci-dessus pour tester. Note : Le produit 257 est de Cat 50. Le produit 149 est de Cat 35.'
       ]);
       setInsertForm({ id_ligne_commande: '999960', id_commande: '167', id_produit: '257', quantite: '120', remise: '0.1' });
       setUpdateForm({ id_ligne_commande: '999960', id_produit: '257', quantite: '120', remise: '0.1' });
       setDeleteForm({ id_ligne_commande: '999960' });
     } else {
       setDmlLogs([
-        'Switched to Scenario 2 (Volume-Based Fragmentation).',
-        '• Site 1 (Wholesale): Quantity >= 100',
-        '• Site 2 (Retail): Quantity < 100',
-        'All rows are routed dynamically to one of the local sites.'
+        'Passage au Scénario 2 (Fragmentation par Volume).',
+        '• Site 1 (Gros) : Quantité >= 100',
+        '• Site 2 (Détail) : Quantité < 100',
+        'Toutes les lignes sont routées dynamiquement vers l\'un des sites locaux.'
       ]);
       setInsertForm({ id_ligne_commande: '999960', id_commande: '167', id_produit: '149', quantite: '150', remise: '0.1' });
       setUpdateForm({ id_ligne_commande: '999960', id_produit: '149', quantite: '30', remise: '0.1' });
@@ -101,7 +101,7 @@ export default function Dashboard() {
   const handleDmlSubmit = async (e) => {
     e.preventDefault();
     setDmlLoading(true);
-    setDmlLogs([`[Scenario ${scenario}] Initiating distributed transaction...`]);
+    setDmlLogs([`[Scénario ${scenario}] Initialisation de la transaction distribuée...`]);
     setLastRoutedTo('none');
 
     const formFields = 
@@ -138,10 +138,10 @@ export default function Dashboard() {
         }
         fetchLatestData();
       } else {
-        setDmlLogs(prev => [...prev, `❌ FAILED: ${result.error || 'Unknown database error'}`]);
+        setDmlLogs(prev => [...prev, `❌ ÉCHEC : ${result.error || 'Erreur de base de données inconnue'}`]);
       }
     } catch (err) {
-      setDmlLogs(prev => [...prev, `❌ Network communication error: ${err.message}`]);
+      setDmlLogs(prev => [...prev, `❌ Erreur de communication réseau : ${err.message}`]);
     } finally {
       setDmlLoading(false);
     }
@@ -177,10 +177,10 @@ export default function Dashboard() {
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '12px' }}>
             <div>
               <h1 style={{ fontSize: '1.4rem', fontWeight: 600, letterSpacing: '-0.025em', display: 'flex', alignItems: 'center', gap: '10px' }}>
-                <Network size={22} color="#6366f1" /> E-Shop Distributed DB Control Center
+                <Network size={22} color="#6366f1" /> Centre de Contrôle de la BDD Distribuée E-Shop
               </h1>
               <p style={{ fontSize: '0.8rem', color: 'var(--text-muted)', marginTop: '2px' }}>
-                {scenario === 1 ? 'Scenario 1: Category & Quantity Horizontal Fragmentation' : 'Scenario 2: Volume-Based Wholesale & Retail Fragmentation'}
+                {scenario === 1 ? 'Scénario 1 : Fragmentation Horizontale par Catégorie & Quantité' : 'Scénario 2 : Fragmentation par Volume (Vente en Gros vs Détail)'}
               </p>
             </div>
 
@@ -198,7 +198,7 @@ export default function Dashboard() {
                   boxShadow: scenario === 1 ? '0 2px 8px rgba(79, 70, 229, 0.3)' : 'none'
                 }}
               >
-                Scenario 1 (Category-Based)
+                Scénario 1 (Par Catégorie)
               </button>
               <button 
                 onClick={() => setScenario(2)}
@@ -212,7 +212,7 @@ export default function Dashboard() {
                   boxShadow: scenario === 2 ? '0 2px 8px rgba(79, 70, 229, 0.3)' : 'none'
                 }}
               >
-                Scenario 2 (Volume-Based)
+                Scénario 2 (Par Volume)
               </button>
             </div>
           </div>
@@ -222,7 +222,7 @@ export default function Dashboard() {
             <div style={{ display: 'flex', gap: '12px', fontSize: '0.78rem', flexWrap: 'wrap' }}>
               <div style={{ display: 'flex', alignItems: 'center', background: 'rgba(255,255,255,0.02)', padding: '6px 12px', borderRadius: '20px', border: '1px solid var(--border-color)' }}>
                 <span className={`status-dot ${statuses.globale}`}></span>
-                Global PDB (Port {scenario === 1 ? 1521 : 1524})
+                PDB Globale (Port {scenario === 1 ? 1521 : 1524})
               </div>
               <div style={{ display: 'flex', alignItems: 'center', background: 'rgba(255,255,255,0.02)', padding: '6px 12px', borderRadius: '20px', border: '1px solid var(--border-color)' }}>
                 <span className={`status-dot ${statuses.site1}`}></span>
@@ -242,7 +242,7 @@ export default function Dashboard() {
                 disabled={loadingData}
                 style={{ padding: '8px 12px', fontSize: '0.8rem' }}
               >
-                <RefreshCw size={12} className={loadingData ? 'animate-spin' : ''} style={{ marginRight: 4 }} /> Refresh Tables
+                <RefreshCw size={12} className={loadingData ? 'animate-spin' : ''} style={{ marginRight: 4 }} /> Actualiser les Tables
               </button>
               <button 
                 id="btn-refresh-status-header"
@@ -251,7 +251,7 @@ export default function Dashboard() {
                 disabled={loadingStatus}
                 style={{ padding: '8px 12px', fontSize: '0.8rem' }}
               >
-                <RefreshCw size={12} className={loadingStatus ? 'animate-spin' : ''} style={{ marginRight: 4 }} /> Refresh Status
+                <RefreshCw size={12} className={loadingStatus ? 'animate-spin' : ''} style={{ marginRight: 4 }} /> Actualiser le Statut
               </button>
             </div>
           </div>
@@ -264,7 +264,7 @@ export default function Dashboard() {
         {/* SECTION 1: ARCHITECTURE TOPOLOGY MAP */}
         <section className="glass-panel glow-card-global">
           <h2 style={{ fontSize: '1.1rem', fontWeight: 500, display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '16px' }}>
-            <Network size={18} color="#818cf8" /> Topology: Scenario {scenario}
+            <Network size={18} color="#818cf8" /> Topologie : Scénario {scenario}
           </h2>
           
           <div style={{ position: 'relative', width: '100%', height: '240px', background: 'rgba(5,7,12,0.4)', borderRadius: '12px', border: '1px solid rgba(255,255,255,0.03)', overflow: 'hidden' }}>
@@ -305,7 +305,7 @@ export default function Dashboard() {
               </div>
               <div style={{ fontSize: '0.85rem', fontWeight: 600 }}>site1-db{scenario === 2 ? '-s2' : ''}</div>
               <div style={{ fontSize: '0.7rem', color: 'var(--text-muted)' }}>
-                {scenario === 1 ? 'Category 50 & Qty > 100' : 'Wholesale Segment (Qty \u2265 100)'}
+                {scenario === 1 ? 'Catégorie 50 & Qte > 100' : 'Segment de Gros (Qte \u2265 100)'}
               </div>
             </div>
 
@@ -316,17 +316,17 @@ export default function Dashboard() {
               </div>
               <div style={{ fontSize: '0.85rem', fontWeight: 600 }}>site2-db{scenario === 2 ? '-s2' : ''}</div>
               <div style={{ fontSize: '0.7rem', color: 'var(--text-muted)' }}>
-                {scenario === 1 ? 'Category 35 & Qty > 50' : 'Retail Segment (Qty < 100)'}
+                {scenario === 1 ? 'Catégorie 35 & Qte > 50' : 'Segment de Détail (Qte < 100)'}
               </div>
             </div>
 
             {/* Overlay indicators */}
             <div style={{ position: 'absolute', top: '10px', left: '10px', display: 'flex', gap: '8px', fontSize: '0.65rem' }}>
               <span style={{ display: 'flex', alignItems: 'center', gap: '4px', background: 'rgba(255,255,255,0.05)', padding: '2px 6px', borderRadius: '4px' }}>
-                <span style={{ width: 6, height: 6, borderRadius: '50%', background: '#a78bfa' }}></span> trigger routing
+                <span style={{ width: 6, height: 6, borderRadius: '50%', background: '#a78bfa' }}></span> routage par trigger
               </span>
               <span style={{ display: 'flex', alignItems: 'center', gap: '4px', background: 'rgba(255,255,255,0.05)', padding: '2px 6px', borderRadius: '4px' }}>
-                <span style={{ width: 6, height: 6, borderRadius: '50%', background: '#f59e0b' }}></span> active dblinks
+                <span style={{ width: 6, height: 6, borderRadius: '50%', background: '#f59e0b' }}></span> liens bdd actifs
               </span>
             </div>
 
@@ -336,11 +336,11 @@ export default function Dashboard() {
             <Info size={18} style={{ flexShrink: 0, marginTop: '2px', color: '#60a5fa' }} />
             {scenario === 1 ? (
               <div>
-                <strong>Scenario 1 Fragmentation Rule</strong>: Rows are only copied to Site 1 (if the product is Category 50 and Qty &gt; 100) or to Site 2 (if the product is Category 35 and Qty &gt; 50). Other items are stored solely in the Global database.
+                <strong>Règle de fragmentation du Scénario 1</strong> : Les lignes sont répliquées sur le Site 1 (si le produit est de Catégorie 50 et la Qte &gt; 100) ou sur le Site 2 (si le produit est de Catégorie 35 et la Qte &gt; 50). Les autres lignes restent exclusivement dans la BDD Globale.
               </div>
             ) : (
               <div>
-                <strong>Scenario 2 Fragmentation Rule</strong>: Every row is routed to a local site based strictly on quantity. Site 1 gets wholesale volumes (Qty &ge; 100) and Site 2 gets retail volumes (Qty &lt; 100). No data is orphaned on the global layer.
+                <strong>Règle de fragmentation du Scénario 2</strong> : Chaque ligne est routée vers un site local selon sa quantité. Le Site 1 reçoit les volumes de gros (Qte &ge; 100) et le Site 2 reçoit les volumes de détail (Qte &lt; 100). Aucune donnée n'est isolée au niveau global.
               </div>
             )}
           </div>
@@ -354,19 +354,19 @@ export default function Dashboard() {
               onClick={() => setActiveTab('insert')}
               style={{ background: 'none', border: 'none', borderBottom: activeTab === 'insert' ? '2px solid #6366f1' : 'none', color: activeTab === 'insert' ? '#fff' : 'var(--text-muted)', padding: '10px 16px', fontSize: '0.9rem', fontWeight: 500, cursor: 'pointer' }}
             >
-              <Zap size={14} style={{ marginRight: 6, display: 'inline', verticalAlign: 'middle' }} /> Insert
+              <Zap size={14} style={{ marginRight: 6, display: 'inline', verticalAlign: 'middle' }} /> Insérer
             </button>
             <button 
               onClick={() => setActiveTab('update')}
               style={{ background: 'none', border: 'none', borderBottom: activeTab === 'update' ? '2px solid #6366f1' : 'none', color: activeTab === 'update' ? '#fff' : 'var(--text-muted)', padding: '10px 16px', fontSize: '0.9rem', fontWeight: 500, cursor: 'pointer' }}
             >
-              <Edit size={14} style={{ marginRight: 6, display: 'inline', verticalAlign: 'middle' }} /> Update
+              <Edit size={14} style={{ marginRight: 6, display: 'inline', verticalAlign: 'middle' }} /> Mettre à jour
             </button>
             <button 
               onClick={() => setActiveTab('delete')}
               style={{ background: 'none', border: 'none', borderBottom: activeTab === 'delete' ? '2px solid #6366f1' : 'none', color: activeTab === 'delete' ? '#fff' : 'var(--text-muted)', padding: '10px 16px', fontSize: '0.9rem', fontWeight: 500, cursor: 'pointer' }}
             >
-              <Trash2 size={14} style={{ marginRight: 6, display: 'inline', verticalAlign: 'middle' }} /> Delete
+              <Trash2 size={14} style={{ marginRight: 6, display: 'inline', verticalAlign: 'middle' }} /> Supprimer
             </button>
           </div>
 
@@ -376,7 +376,7 @@ export default function Dashboard() {
             {activeTab === 'insert' && (
               <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px' }}>
                 <div>
-                  <label style={{ fontSize: '0.75rem', color: 'var(--text-muted)', display: 'block', marginBottom: 4 }}>Line ID</label>
+                  <label style={{ fontSize: '0.75rem', color: 'var(--text-muted)', display: 'block', marginBottom: 4 }}>ID Ligne</label>
                   <input 
                     id="insert-id-ligne"
                     type="number" 
@@ -385,7 +385,7 @@ export default function Dashboard() {
                   />
                 </div>
                 <div>
-                  <label style={{ fontSize: '0.75rem', color: 'var(--text-muted)', display: 'block', marginBottom: 4 }}>Order ID</label>
+                  <label style={{ fontSize: '0.75rem', color: 'var(--text-muted)', display: 'block', marginBottom: 4 }}>ID Commande</label>
                   <input 
                     id="insert-id-commande"
                     type="number" 
@@ -394,7 +394,7 @@ export default function Dashboard() {
                   />
                 </div>
                 <div>
-                  <label style={{ fontSize: '0.75rem', color: 'var(--text-muted)', display: 'block', marginBottom: 4 }}>Product ID</label>
+                  <label style={{ fontSize: '0.75rem', color: 'var(--text-muted)', display: 'block', marginBottom: 4 }}>ID Produit</label>
                   <select 
                     id="insert-id-produit"
                     value={insertForm.id_produit} 
@@ -402,20 +402,20 @@ export default function Dashboard() {
                   >
                     {scenario === 1 ? (
                       <>
-                        <option value="257">Product 257 (Category 50 - target Site 1)</option>
-                        <option value="149">Product 149 (Category 35 - target Site 2)</option>
-                        <option value="1">Product 1 (Category 1 - does not replicate)</option>
+                        <option value="257">Produit 257 (Catégorie 50 - cible Site 1)</option>
+                        <option value="149">Produit 149 (Catégorie 35 - cible Site 2)</option>
+                        <option value="1">Produit 1 (Catégorie 1 - pas de réplication)</option>
                       </>
                     ) : (
                       <>
-                        <option value="149">Product 149 (Category 35)</option>
-                        <option value="257">Product 257 (Category 50)</option>
+                        <option value="149">Produit 149 (Catégorie 35)</option>
+                        <option value="257">Produit 257 (Catégorie 50)</option>
                       </>
                     )}
                   </select>
                 </div>
                 <div>
-                  <label style={{ fontSize: '0.75rem', color: 'var(--text-muted)', display: 'block', marginBottom: 4 }}>Quantity</label>
+                  <label style={{ fontSize: '0.75rem', color: 'var(--text-muted)', display: 'block', marginBottom: 4 }}>Quantité</label>
                   <input 
                     id="insert-quantite"
                     type="number" 
@@ -424,7 +424,7 @@ export default function Dashboard() {
                   />
                 </div>
                 <div style={{ gridColumn: 'span 2' }}>
-                  <label style={{ fontSize: '0.75rem', color: 'var(--text-muted)', display: 'block', marginBottom: 4 }}>Discount (Remise)</label>
+                  <label style={{ fontSize: '0.75rem', color: 'var(--text-muted)', display: 'block', marginBottom: 4 }}>Remise</label>
                   <input 
                     id="insert-remise"
                     type="number" 
@@ -440,7 +440,7 @@ export default function Dashboard() {
             {activeTab === 'update' && (
               <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px' }}>
                 <div>
-                  <label style={{ fontSize: '0.75rem', color: 'var(--text-muted)', display: 'block', marginBottom: 4 }}>Target Line ID</label>
+                  <label style={{ fontSize: '0.75rem', color: 'var(--text-muted)', display: 'block', marginBottom: 4 }}>ID Ligne Cible</label>
                   <input 
                     id="update-id-ligne"
                     type="number" 
@@ -449,18 +449,18 @@ export default function Dashboard() {
                   />
                 </div>
                 <div>
-                  <label style={{ fontSize: '0.75rem', color: 'var(--text-muted)', display: 'block', marginBottom: 4 }}>Product ID</label>
+                  <label style={{ fontSize: '0.75rem', color: 'var(--text-muted)', display: 'block', marginBottom: 4 }}>ID Produit</label>
                   <select 
                     id="update-id-produit"
                     value={updateForm.id_produit} 
                     onChange={e => setUpdateForm(p => ({ ...p, id_produit: e.target.value }))}
                   >
-                    <option value="149">Product 149 (Cat 35)</option>
-                    <option value="257">Product 257 (Cat 50)</option>
+                    <option value="149">Produit 149 (Cat 35)</option>
+                    <option value="257">Produit 257 (Cat 50)</option>
                   </select>
                 </div>
                 <div>
-                  <label style={{ fontSize: '0.75rem', color: 'var(--text-muted)', display: 'block', marginBottom: 4 }}>New Quantity</label>
+                  <label style={{ fontSize: '0.75rem', color: 'var(--text-muted)', display: 'block', marginBottom: 4 }}>Nouvelle Quantité</label>
                   <input 
                     id="update-quantite"
                     type="number" 
@@ -469,7 +469,7 @@ export default function Dashboard() {
                   />
                 </div>
                 <div>
-                  <label style={{ fontSize: '0.75rem', color: 'var(--text-muted)', display: 'block', marginBottom: 4 }}>New Discount</label>
+                  <label style={{ fontSize: '0.75rem', color: 'var(--text-muted)', display: 'block', marginBottom: 4 }}>Nouvelle Remise</label>
                   <input 
                     id="update-remise"
                     type="number" 
@@ -484,7 +484,7 @@ export default function Dashboard() {
             {/* DELETE FORM */}
             {activeTab === 'delete' && (
               <div>
-                <label style={{ fontSize: '0.75rem', color: 'var(--text-muted)', display: 'block', marginBottom: 4 }}>Target Line ID</label>
+                <label style={{ fontSize: '0.75rem', color: 'var(--text-muted)', display: 'block', marginBottom: 4 }}>ID Ligne Cible</label>
                 <input 
                   id="delete-id-ligne"
                   type="number" 
@@ -501,20 +501,20 @@ export default function Dashboard() {
               className="btn btn-primary" 
               disabled={dmlLoading}
             >
-              <Play size={16} /> Execute DML simulation
+              <Play size={16} /> Exécuter la simulation DML
             </button>
           </form>
 
           {/* Logging console */}
           <div style={{ marginTop: '20px' }}>
             <h3 style={{ fontSize: '0.8rem', fontWeight: 500, color: 'var(--text-muted)', marginBottom: '8px' }}>
-              Execution Logs & Transactions Console
+              Console des Logs d'Exécution & Transactions
             </h3>
             <div className="logger-console">
               {dmlLogs.map((log, index) => {
                 let statusClass = 'info';
-                if (log.includes('Verified:') || log.includes('committed')) statusClass = 'success';
-                if (log.includes('❌') || log.includes('error')) statusClass = 'error';
+                if (log.includes('Verified:') || log.includes('Vérifié:') || log.includes('committed') || log.includes('validée')) statusClass = 'success';
+                if (log.includes('❌') || log.includes('error') || log.includes('erreur') || log.includes('ÉCHEC')) statusClass = 'error';
                 return (
                   <div key={index} className={`log-item ${statusClass}`}>
                     <span style={{ opacity: 0.5 }}>&gt;</span> {log}
@@ -529,7 +529,7 @@ export default function Dashboard() {
         <section className="glass-panel full-width">
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px' }}>
             <h2 style={{ fontSize: '1.1rem', fontWeight: 500, display: 'flex', alignItems: 'center', gap: '8px' }}>
-              <Database size={18} color="#34d399" /> Local Sites Data Explorer &mdash; Scenario {scenario}
+              <Database size={18} color="#34d399" /> Explorateur de Données des Sites Locaux &mdash; Scénario {scenario}
             </h2>
             <button 
               id="btn-refresh-data"
@@ -537,7 +537,7 @@ export default function Dashboard() {
               onClick={fetchLatestData} 
               disabled={loadingData}
             >
-              <RefreshCw size={14} className={loadingData ? 'animate-spin' : ''} style={{ marginRight: 6 }} /> Refresh Data
+              <RefreshCw size={14} className={loadingData ? 'animate-spin' : ''} style={{ marginRight: 6 }} /> Actualiser les Données
             </button>
           </div>
 
@@ -549,25 +549,25 @@ export default function Dashboard() {
                   Site 1 (DB Link SITE_1) &mdash; LIGNES_COMMANDES_1
                 </h3>
                 <span style={{ fontSize: '0.7rem', color: 'var(--text-muted)' }}>
-                  {scenario === 1 ? 'Cat 50 & Qty > 100' : 'Filters: Qty \u2265 100'}
+                  {scenario === 1 ? 'Cat 50 & Qte > 100' : 'Filtre : Qte \u2265 100'}
                 </span>
               </div>
               <div className="table-container">
                 <table>
                   <thead>
                     <tr>
-                      <th>Line ID</th>
-                      <th>Order ID</th>
-                      <th>Product ID</th>
-                      <th>Quantity</th>
-                      <th>Discount</th>
+                      <th>ID Ligne</th>
+                      <th>ID Commande</th>
+                      <th>ID Produit</th>
+                      <th>Quantité</th>
+                      <th>Remise</th>
                     </tr>
                   </thead>
                   <tbody>
                     {tablesData.site1.length === 0 ? (
                       <tr>
                         <td colSpan="5" style={{ textAlign: 'center', color: 'var(--text-muted)' }}>
-                          No rows found in this partition. (Ensure Docker containers on these ports are running)
+                          Aucune ligne trouvée dans cette partition. (Assurez-vous que les conteneurs Docker sur ces ports sont démarrés)
                         </td>
                       </tr>
                     ) : (
@@ -593,25 +593,25 @@ export default function Dashboard() {
                   Site 2 (DB Link SITE_2) &mdash; LIGNES_COMMANDES_2
                 </h3>
                 <span style={{ fontSize: '0.7rem', color: 'var(--text-muted)' }}>
-                  {scenario === 1 ? 'Cat 35 & Qty > 50' : 'Filters: Qty < 100'}
+                  {scenario === 1 ? 'Cat 35 & Qte > 50' : 'Filtre : Qte < 100'}
                 </span>
               </div>
               <div className="table-container">
                 <table>
                   <thead>
                     <tr>
-                      <th>Line ID</th>
-                      <th>Order ID</th>
-                      <th>Product ID</th>
-                      <th>Quantity</th>
-                      <th>Discount</th>
+                      <th>ID Ligne</th>
+                      <th>ID Commande</th>
+                      <th>ID Produit</th>
+                      <th>Quantité</th>
+                      <th>Remise</th>
                     </tr>
                   </thead>
                   <tbody>
                     {tablesData.site2.length === 0 ? (
                       <tr>
                         <td colSpan="5" style={{ textAlign: 'center', color: 'var(--text-muted)' }}>
-                          No rows found in this partition. (Ensure Docker containers on these ports are running)
+                          Aucune ligne trouvée dans cette partition. (Assurez-vous que les conteneurs Docker sur ces ports sont démarrés)
                         </td>
                       </tr>
                     ) : (
@@ -635,10 +635,10 @@ export default function Dashboard() {
         {/* SECTION 4: DISTRIBUTED QUERY ENGINE */}
         <section className="glass-panel">
           <h2 style={{ fontSize: '1.1rem', fontWeight: 500, display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '16px' }}>
-            <TrendingUp size={18} color="#f59e0b" /> Distributed Analytics Query
+            <TrendingUp size={18} color="#f59e0b" /> Requête d'Analyse Distribuée
           </h2>
           <p style={{ fontSize: '0.85rem', color: 'var(--text-muted)', marginBottom: '16px', lineHeight: '1.4' }}>
-            Executing the distributed query to calculate 2026 revenue per product category. Resolves data from Site 1 and Site 2.
+            Exécution de la requête distribuée pour calculer le chiffre d'affaires 2026 par catégorie de produit en consolidant le Site 1 et le Site 2.
           </p>
 
           <button 
@@ -648,26 +648,26 @@ export default function Dashboard() {
             disabled={queryLoading}
             style={{ width: '100%', marginBottom: '20px' }}
           >
-            <Play size={16} /> Execute 2026 Revenue Query
+            <Play size={16} /> Calculer le CA 2026
           </button>
 
           {queryError && (
             <div style={{ background: 'rgba(239, 68, 68, 0.1)', border: '1px solid rgba(239, 68, 68, 0.2)', padding: '12px', borderRadius: '8px', color: '#f87171', fontSize: '0.82rem', marginBottom: '16px' }}>
               <AlertCircle size={16} style={{ display: 'inline', marginRight: 6, verticalAlign: 'middle' }} />
-              Error: {queryError}
+              Erreur : {queryError}
             </div>
           )}
 
           {queryLoading ? (
             <div style={{ textAlign: 'center', padding: '30px 0', color: 'var(--text-muted)' }}>
               <RefreshCw size={24} className="animate-spin" style={{ margin: '0 auto 10px auto' }} />
-              Retrieving distributed records...
+              Récupération des enregistrements distribués...
             </div>
           ) : queryData.length > 0 ? (
             <div>
               {/* Custom charts */}
               <div style={{ marginBottom: '20px' }}>
-                <h4 style={{ fontSize: '0.8rem', fontWeight: 600, color: 'var(--text-muted)', marginBottom: '12px' }}>Visual Revenue (MAD)</h4>
+                <h4 style={{ fontSize: '0.8rem', fontWeight: 600, color: 'var(--text-muted)', marginBottom: '12px' }}>Chiffre d'Affaires Visuel (MAD)</h4>
                 {queryData.map((row) => {
                   const widthPercent = (row.CA_TOTAL_2026 / maxRevenue) * 100;
                   return (
@@ -691,9 +691,9 @@ export default function Dashboard() {
                 <table>
                   <thead>
                     <tr>
-                      <th>Cat ID</th>
-                      <th>Category Name</th>
-                      <th>Total CA 2026</th>
+                      <th>Code Cat</th>
+                      <th>Nom Catégorie</th>
+                      <th>CA Total 2026</th>
                     </tr>
                   </thead>
                   <tbody>
@@ -712,7 +712,7 @@ export default function Dashboard() {
             </div>
           ) : (
             <div style={{ textAlign: 'center', padding: '40px 0', border: '1px dashed rgba(255,255,255,0.06)', borderRadius: '8px', color: 'var(--text-muted)', fontSize: '0.85rem' }}>
-              Click the button above to test the distributed query.
+              Cliquez sur le bouton ci-dessus pour tester la requête distribuée.
             </div>
           )}
         </section>
@@ -720,10 +720,10 @@ export default function Dashboard() {
         {/* SECTION 5: PERFORMANCE OPTIMIZATION VISUALIZER */}
         <section className="glass-panel">
           <h2 style={{ fontSize: '1.1rem', fontWeight: 500, display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '16px' }}>
-            <Zap size={18} color="#22c55e" /> Performance Optimization Panel
+            <Zap size={18} color="#22c55e" /> Panneau d'Optimisation des Performances
           </h2>
           <p style={{ fontSize: '0.85rem', color: 'var(--text-muted)', marginBottom: '16px', lineHeight: '1.4' }}>
-            Understanding index optimization. Oracle parses plans to convert sequential full scans into high-performance index scans.
+            Comprendre l'optimisation par index. Oracle analyse les plans pour convertir les scans complets séquentiels (FTS) en scans d'index haute performance.
           </p>
 
           <div style={{ display: 'flex', flexDirection: 'column', gap: '14px' }}>
@@ -731,33 +731,33 @@ export default function Dashboard() {
             {/* Before index */}
             <div style={{ background: 'rgba(239, 68, 68, 0.03)', border: '1px solid rgba(239, 68, 68, 0.15)', borderRadius: '8px', padding: '12px' }}>
               <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '6px' }}>
-                <span style={{ fontSize: '0.8rem', fontWeight: 600, color: '#f87171' }}>WITHOUT INDEXES</span>
-                <span style={{ fontSize: '0.7rem', color: '#f87171', background: 'rgba(239, 68, 68, 0.1)', padding: '2px 6px', borderRadius: '4px' }}>High Cost</span>
+                <span style={{ fontSize: '0.8rem', fontWeight: 600, color: '#f87171' }}>SANS INDEX</span>
+                <span style={{ fontSize: '0.7rem', color: '#f87171', background: 'rgba(239, 68, 68, 0.1)', padding: '2px 6px', borderRadius: '4px' }}>Coût Élevé</span>
               </div>
               <div style={{ fontFamily: 'JetBrains Mono', fontSize: '0.75rem', color: 'var(--text-muted)', lineHeight: '1.3' }}>
-                &bull; Operation: <strong style={{ color: '#ef4444' }}>TABLE ACCESS FULL (FTS)</strong> on COMMANDES<br/>
-                &bull; Block Reads: ~1,450 physical blocks<br/>
-                &bull; Join Method: HASH JOIN (High RAM buffer usage)<br/>
-                &bull; Slower query response due to sequential scan.
+                &bull; Opération : <strong style={{ color: '#ef4444' }}>TABLE ACCESS FULL (FTS)</strong> sur COMMANDES<br/>
+                &bull; Lectures de Blocs : ~1 450 blocs physiques<br/>
+                &bull; Méthode de Jointure : HASH JOIN (Utilisation de mémoire élevée)<br/>
+                &bull; Réponse de requête lente en raison du balayage complet de la table.
               </div>
             </div>
 
             {/* After index */}
             <div style={{ background: 'rgba(34, 197, 94, 0.03)', border: '1px solid rgba(34, 197, 94, 0.15)', borderRadius: '8px', padding: '12px' }}>
               <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '6px' }}>
-                <span style={{ fontSize: '0.8rem', fontWeight: 600, color: '#4ade80' }}>WITH IDX_COMMANDES_DATE &amp; IDX_COMMANDES_CLIENT</span>
+                <span style={{ fontSize: '0.8rem', fontWeight: 600, color: '#4ade80' }}>AVEC LES INDEX IDX_COMMANDES_DATE &amp; IDX_COMMANDES_CLIENT</span>
                 <span style={{ fontSize: '0.7rem', color: '#4ade80', background: 'rgba(34, 197, 94, 0.1)', padding: '2px 6px', borderRadius: '4px' }}>Optimal</span>
               </div>
               <div style={{ fontFamily: 'JetBrains Mono', fontSize: '0.75rem', color: 'var(--text-muted)', lineHeight: '1.3' }}>
-                &bull; Operation: <strong style={{ color: '#22c55e' }}>INDEX RANGE SCAN</strong> on IDX_COMMANDES_DATE<br/>
-                &bull; Block Reads: &lt; 20 blocks<br/>
-                &bull; Join Method: NESTED LOOPS using Client Index<br/>
-                &bull; Immediate query response using index ranges.
+                &bull; Opération : <strong style={{ color: '#22c55e' }}>INDEX RANGE SCAN</strong> sur IDX_COMMANDES_DATE<br/>
+                &bull; Lectures de Blocs : &lt; 20 blocs<br/>
+                &bull; Méthode de Jointure : NESTED LOOPS via l'index client<br/>
+                &bull; Réponse immédiate de la requête grâce aux plages d'index.
               </div>
             </div>
 
             <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)', background: 'rgba(255,255,255,0.01)', border: '1px solid var(--border-color)', borderRadius: '8px', padding: '10px' }}>
-              <strong>Optimization Hint:</strong> Indexing foreign keys (like <code>ID_CLIENT</code> in <code>COMMANDES</code>) prevents table-level lock escalation during concurrent operations in Oracle databases.
+              <strong>Conseil d'Optimisation :</strong> L'indexation des clés étrangères (comme <code>ID_CLIENT</code> dans <code>COMMANDES</code>) évite l'escalade des verrous au niveau de la table lors des opérations concurrentes dans Oracle.
             </div>
 
           </div>

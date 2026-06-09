@@ -4,7 +4,7 @@ const db = require('@/lib/db');
 export async function GET(req) {
   try {
     const { searchParams } = new URL(req.url);
-    const scenario = searchParams.get('scenario') || '2';
+    const scenario = searchParams.get('scenario') || '1';
     const statuses = await db.getStatus(scenario);
     return NextResponse.json({ success: true, statuses });
   } catch (error) {

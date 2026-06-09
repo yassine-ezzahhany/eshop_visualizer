@@ -3,7 +3,7 @@ const db = require('@/lib/db');
 
 export async function GET(req) {
   const { searchParams } = new URL(req.url);
-  const scenario = searchParams.get('scenario') || '2';
+  const scenario = searchParams.get('scenario') || '1';
 
   const sql = `
     WITH ALL_LIGNES AS (

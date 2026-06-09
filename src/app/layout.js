@@ -1,13 +1,13 @@
 import "./globals.css";
 
 export const metadata = {
-  title: "E-Shop Distributed Database Control Center",
-  description: "Interactive dashboard for simulating, visualizing, and querying a distributed Oracle database system with volume-based horizontal fragmentation.",
+  title: "Centre de Contrôle de la Base de Données Distribuée E-Shop",
+  description: "Tableau de bord interactif pour simuler, visualiser et requêter un système de base de données Oracle distribuée avec fragmentation horizontale par volume.",
 };
 
 export default function RootLayout({ children }) {
   return (
-    <html lang="en">
+    <html lang="fr">
       <body>{children}</body>
     </html>
   );

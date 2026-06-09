@@ -14,28 +14,28 @@ export async function POST(req) {
     const rem = parseFloat(remise);
 
     if (isNaN(idLigne) || idLigne <= 0) {
-      return NextResponse.json({ success: false, error: 'Invalid ID_LIGNE_COMMANDE.' }, { status: 400 });
+      return NextResponse.json({ success: false, error: 'Identifiant ID_LIGNE_COMMANDE invalide.' }, { status: 400 });
     }
 
     let sql = '';
     let binds = [];
     let logs = [];
 
-    logs.push(`[Scenario ${sc}] Initiated ${action.toUpperCase()} action for Line ID: ${idLigne}`);
+    logs.push(`[Scénario ${sc}] Action ${action.toUpperCase()} initiée pour l'ID Ligne : ${idLigne}`);
 
     if (action === 'insert') {
       if (isNaN(idCmd) || isNaN(idProd) || isNaN(qte) || isNaN(rem)) {
-        return NextResponse.json({ success: false, error: 'All fields must be provided and valid for insertion.' }, { status: 400 });
+        return NextResponse.json({ success: false, error: 'Tous les champs doivent être saisis et valides pour une insertion.' }, { status: 400 });
       }
       sql = `
         INSERT INTO LIGNES_COMMANDES (ID_LIGNE_COMMANDE, ID_COMMANDE, ID_PRODUIT, QUANTITE, REMISE)
         VALUES (:idLigne, :idCmd, :idProd, :qte, :rem)
       `;
       binds = [idLigne, idCmd, idProd, qte, rem];
-      logs.push(`Sending INSERT to ESHOP_GLOBALE_PDB (Port ${sc === 1 ? 1521 : 1524})...`);
+      logs.push(`Envoi de l'INSERT à ESHOP_GLOBALE_PDB (Port ${sc === 1 ? 1521 : 1524})...`);
     } else if (action === 'update') {
       if (isNaN(qte) || isNaN(rem) || isNaN(idProd)) {
-        return NextResponse.json({ success: false, error: 'Product ID, Quantity and Discount must be provided.' }, { status: 400 });
+        return NextResponse.json({ success: false, error: 'L\'ID Produit, la quantité et la remise doivent être saisis.' }, { status: 400 });
       }
       sql = `
         UPDATE LIGNES_COMMANDES 
@@ -43,29 +43,29 @@ export async function POST(req) {
         WHERE ID_LIGNE_COMMANDE = :idLigne
       `;
       binds = [qte, idProd, rem, idLigne];
-      logs.push(`Sending UPDATE to ESHOP_GLOBALE_PDB (Port ${sc === 1 ? 1521 : 1524})...`);
+      logs.push(`Envoi de l'UPDATE à ESHOP_GLOBALE_PDB (Port ${sc === 1 ? 1521 : 1524})...`);
     } else if (action === 'delete') {
       sql = `DELETE FROM LIGNES_COMMANDES WHERE ID_LIGNE_COMMANDE = :idLigne`;
       binds = [idLigne];
-      logs.push(`Sending DELETE to ESHOP_GLOBALE_PDB (Port ${sc === 1 ? 1521 : 1524})...`);
+      logs.push(`Envoi du DELETE à ESHOP_GLOBALE_PDB (Port ${sc === 1 ? 1521 : 1524})...`);
     } else {
-      return NextResponse.json({ success: false, error: 'Invalid action.' }, { status: 400 });
+      return NextResponse.json({ success: false, error: 'Action invalide.' }, { status: 400 });
     }
 
     // Execute on global DB for the selected scenario
     const res = await db.executeQuery(sc, 'globale', sql, binds);
 
     if (!res.success) {
-      logs.push(`Database error: ${res.error}`);
+      logs.push(`Erreur de base de données : ${res.error}`);
       return NextResponse.json({ success: false, error: res.error, logs });
     }
 
-    logs.push(`Global table transaction committed.`);
+    logs.push(`Transaction sur la table globale validée (committed).`);
 
     // Check where the row is located now
     let routedTo = 'none';
     if (action !== 'delete') {
-      logs.push(`Checking replication status on local nodes...`);
+      logs.push(`Vérification du statut de réplication sur les nœuds locaux...`);
       const checkSql1 = `SELECT COUNT(*) AS CNT FROM LIGNES_COMMANDES_1 WHERE ID_LIGNE_COMMANDE = :idLigne`;
       const checkSql2 = `SELECT COUNT(*) AS CNT FROM LIGNES_COMMANDES_2 WHERE ID_LIGNE_COMMANDE = :idLigne`;
 
@@ -80,27 +80,27 @@ export async function POST(req) {
       if (count1 > 0) {
         routedTo = 'site1';
         if (sc === 1) {
-          logs.push(`Verified: Row exists in ESHOP_SITE1_PDB (Category 50, Qty > 100)`);
+          logs.push(`Vérifié : La ligne existe dans ESHOP_SITE1_PDB (Catégorie 50, Qte > 100)`);
         } else {
-          logs.push(`Verified: Row exists in ESHOP_SITE1_PDB (Wholesale Segment, Qty >= 100)`);
+          logs.push(`Vérifié : La ligne existe dans ESHOP_SITE1_PDB (Segment de gros, Qte >= 100)`);
         }
       } else if (count2 > 0) {
         routedTo = 'site2';
         if (sc === 1) {
-          logs.push(`Verified: Row exists in ESHOP_SITE2_PDB (Category 35, Qty > 50)`);
+          logs.push(`Vérifié : La ligne existe dans ESHOP_SITE2_PDB (Catégorie 35, Qte > 50)`);
         } else {
-          logs.push(`Verified: Row exists in ESHOP_SITE2_PDB (Retail Segment, Qty < 100)`);
+          logs.push(`Vérifié : La ligne existe dans ESHOP_SITE2_PDB (Segment de détail, Qte < 100)`);
         }
       } else {
         if (sc === 1) {
-          logs.push(`Note: In Scenario 1, lines are only replicated if they meet the category rules (Cat 50 & Qty > 100, or Cat 35 & Qty > 50). This line did not meet those, so it exists only in the Global DB.`);
+          logs.push(`Note : Dans le Scénario 1, les lignes ne sont répliquées que si elles respectent les règles de catégorie (Cat 50 & Qte > 100, ou Cat 35 & Qte > 50). Cette ligne ne les respectant pas, elle existe uniquement dans la BDD Globale.`);
         } else {
-          logs.push(`Warning: Row was not found on either Site 1 or Site 2.`);
+          logs.push(`Attention : La ligne n'a pas été trouvée sur le Site 1 ni sur le Site 2.`);
         }
       }
     } else {
-      logs.push(`Propagating deletion to local nodes...`);
-      logs.push(`Verified: Row deleted on all nodes.`);
+      logs.push(`Propagation de la suppression aux nœuds locaux...`);
+      logs.push(`Vérifié : Ligne supprimée sur tous les nœuds.`);
     }
 
     return NextResponse.json({

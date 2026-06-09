@@ -3,7 +3,7 @@ const db = require('@/lib/db');
 
 export async function GET(req) {
   const { searchParams } = new URL(req.url);
-  const scenario = searchParams.get('scenario') || '2';
+  const scenario = searchParams.get('scenario') || '1';
 
   const sqlGlobal = `
     SELECT ID_LIGNE_COMMANDE, ID_COMMANDE, ID_PRODUIT, QUANTITE, REMISE 
