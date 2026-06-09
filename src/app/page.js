@@ -3,10 +3,13 @@
 import { useState, useEffect } from 'react';
 import { 
   Database, Network, Play, RefreshCw, TrendingUp, Zap, 
-  Trash2, Edit, CheckCircle2, AlertCircle, Info, HelpCircle
+  Trash2, Edit, CheckCircle2, AlertCircle, Info, HelpCircle, ToggleLeft
 } from 'lucide-react';
 
 export default function Dashboard() {
+  // Scenario Selection state (1 or 2)
+  const [scenario, setScenario] = useState(2);
+
   // Database status states
   const [statuses, setStatuses] = useState({ globale: 'offline', site1: 'offline', site2: 'offline' });
   const [loadingStatus, setLoadingStatus] = useState(false);
@@ -17,12 +20,15 @@ export default function Dashboard() {
 
   // DML Sandbox states
   const [activeTab, setActiveTab] = useState('insert');
+  
+  // Forms states - dynamically adjusted when scenario changes
   const [insertForm, setInsertForm] = useState({ id_ligne_commande: '999960', id_commande: '167', id_produit: '149', quantite: '150', remise: '0.1' });
   const [updateForm, setUpdateForm] = useState({ id_ligne_commande: '999960', id_produit: '149', quantite: '30', remise: '0.1' });
   const [deleteForm, setDeleteForm] = useState({ id_ligne_commande: '999960' });
+  
   const [dmlLoading, setDmlLoading] = useState(false);
   const [dmlLogs, setDmlLogs] = useState([
-    'System ready. Enter values above and execute to simulate transaction propagation.'
+    'System ready. Select scenario and execute DML simulation to trace replication.'
   ]);
   const [lastRoutedTo, setLastRoutedTo] = useState('none');
 
@@ -31,16 +37,41 @@ export default function Dashboard() {
   const [queryLoading, setQueryLoading] = useState(false);
   const [queryError, setQueryError] = useState(null);
 
-  // Load database statuses and tables on startup
+  // Load database statuses and tables when scenario changes
   useEffect(() => {
     fetchStatus();
     fetchLatestData();
-  }, []);
+    setQueryData([]);
+    setLastRoutedTo('none');
+    
+    // Reset test data suggestions based on scenario
+    if (scenario === 1) {
+      setDmlLogs([
+        'Switched to Scenario 1 (Category-Based Fragmentation).',
+        '• Site 1: Category 50 & Quantity > 100',
+        '• Site 2: Category 35 & Quantity > 50',
+        'Enter values above to test. Note: Product 257 is Cat 50. Product 149 is Cat 35.'
+      ]);
+      setInsertForm({ id_ligne_commande: '999960', id_commande: '167', id_produit: '257', quantite: '120', remise: '0.1' });
+      setUpdateForm({ id_ligne_commande: '999960', id_produit: '257', quantite: '120', remise: '0.1' });
+      setDeleteForm({ id_ligne_commande: '999960' });
+    } else {
+      setDmlLogs([
+        'Switched to Scenario 2 (Volume-Based Fragmentation).',
+        '• Site 1 (Wholesale): Quantity >= 100',
+        '• Site 2 (Retail): Quantity < 100',
+        'All rows are routed dynamically to one of the local sites.'
+      ]);
+      setInsertForm({ id_ligne_commande: '999960', id_commande: '167', id_produit: '149', quantite: '150', remise: '0.1' });
+      setUpdateForm({ id_ligne_commande: '999960', id_produit: '149', quantite: '30', remise: '0.1' });
+      setDeleteForm({ id_ligne_commande: '999960' });
+    }
+  }, [scenario]);
 
   const fetchStatus = async () => {
     setLoadingStatus(true);
     try {
-      const res = await fetch('/api/status');
+      const res = await fetch(`/api/status?scenario=${scenario}`);
       const data = await res.json();
       if (data.success) {
         setStatuses(data.statuses);
@@ -55,7 +86,7 @@ export default function Dashboard() {
   const fetchLatestData = async () => {
     setLoadingData(true);
     try {
-      const res = await fetch('/api/data');
+      const res = await fetch(`/api/data?scenario=${scenario}`);
       const data = await res.json();
       if (data.success) {
         setTablesData(data.data);
@@ -70,13 +101,19 @@ export default function Dashboard() {
   const handleDmlSubmit = async (e) => {
     e.preventDefault();
     setDmlLoading(true);
-    setDmlLogs([`Initiating distributed transaction...`]);
+    setDmlLogs([`[Scenario ${scenario}] Initiating distributed transaction...`]);
     setLastRoutedTo('none');
 
-    const formPayload = 
-      activeTab === 'insert' ? { action: 'insert', ...insertForm } :
-      activeTab === 'update' ? { action: 'update', ...updateForm } :
-      { action: 'delete', ...deleteForm };
+    const formFields = 
+      activeTab === 'insert' ? insertForm :
+      activeTab === 'update' ? updateForm :
+      deleteForm;
+
+    const formPayload = {
+      action: activeTab,
+      scenario,
+      ...formFields
+    };
 
     try {
       const res = await fetch('/api/dml', {
@@ -92,7 +129,7 @@ export default function Dashboard() {
 
       if (result.success) {
         setLastRoutedTo(result.routedTo || 'none');
-        // Increment IDs automatically to facilitate repeated testing
+        // Auto-increment Line ID
         if (activeTab === 'insert') {
           const nextId = parseInt(insertForm.id_ligne_commande) + 1;
           setInsertForm(prev => ({ ...prev, id_ligne_commande: nextId.toString() }));
@@ -114,7 +151,7 @@ export default function Dashboard() {
     setQueryLoading(true);
     setQueryError(null);
     try {
-      const res = await fetch('/api/query');
+      const res = await fetch(`/api/query?scenario=${scenario}`);
       const data = await res.json();
       if (data.success) {
         setQueryData(data.data);
@@ -135,43 +172,88 @@ export default function Dashboard() {
     <main style={{ paddingBottom: '60px' }}>
       {/* HEADER SECTION */}
       <header style={{ borderBottom: '1px solid var(--border-color)', background: 'rgba(11,15,25,0.8)', padding: '16px 24px', position: 'sticky', top: 0, zIndex: 100, backdropFilter: 'blur(10px)' }}>
-        <div style={{ maxWidth: '1400px', margin: '0 auto', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-          <div>
-            <h1 style={{ fontSize: '1.4rem', fontWeight: 600, letterSpacing: '-0.025em', display: 'flex', alignItems: 'center', gap: '10px' }}>
-              <Network size={22} color="#6366f1" /> E-Shop Distributed DB Control Center
-            </h1>
-            <p style={{ fontSize: '0.8rem', color: 'var(--text-muted)', marginTop: '2px' }}>
-              Horizontal Volume-Based Fragmentation (Scenario 2)
-            </p>
+        <div style={{ maxWidth: '1400px', margin: '0 auto', display: 'flex', flexDirection: 'column', gap: '16px' }}>
+          
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '12px' }}>
+            <div>
+              <h1 style={{ fontSize: '1.4rem', fontWeight: 600, letterSpacing: '-0.025em', display: 'flex', alignItems: 'center', gap: '10px' }}>
+                <Network size={22} color="#6366f1" /> E-Shop Distributed DB Control Center
+              </h1>
+              <p style={{ fontSize: '0.8rem', color: 'var(--text-muted)', marginTop: '2px' }}>
+                {scenario === 1 ? 'Scenario 1: Category & Quantity Horizontal Fragmentation' : 'Scenario 2: Volume-Based Wholesale & Retail Fragmentation'}
+              </p>
+            </div>
+
+            {/* Scenario selector */}
+            <div style={{ display: 'flex', background: 'rgba(255,255,255,0.03)', padding: '4px', borderRadius: '10px', border: '1px solid var(--border-color)' }}>
+              <button 
+                onClick={() => setScenario(1)}
+                className="btn"
+                style={{ 
+                  background: scenario === 1 ? 'linear-gradient(135deg, #6366f1 0%, #4f46e5 100%)' : 'none', 
+                  border: 'none', 
+                  padding: '6px 16px', 
+                  fontSize: '0.82rem', 
+                  fontWeight: 600,
+                  boxShadow: scenario === 1 ? '0 2px 8px rgba(79, 70, 229, 0.3)' : 'none'
+                }}
+              >
+                Scenario 1 (Category-Based)
+              </button>
+              <button 
+                onClick={() => setScenario(2)}
+                className="btn"
+                style={{ 
+                  background: scenario === 2 ? 'linear-gradient(135deg, #6366f1 0%, #4f46e5 100%)' : 'none', 
+                  border: 'none', 
+                  padding: '6px 16px', 
+                  fontSize: '0.82rem', 
+                  fontWeight: 600,
+                  boxShadow: scenario === 2 ? '0 2px 8px rgba(79, 70, 229, 0.3)' : 'none'
+                }}
+              >
+                Scenario 2 (Volume-Based)
+              </button>
+            </div>
           </div>
           
-          <div style={{ display: 'flex', gap: '16px', alignItems: 'center' }}>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderTop: '1px solid rgba(255,255,255,0.04)', paddingTop: '12px', flexWrap: 'wrap', gap: '12px' }}>
             {/* Status indicators */}
-            <div style={{ display: 'flex', gap: '12px', fontSize: '0.8rem' }}>
+            <div style={{ display: 'flex', gap: '12px', fontSize: '0.78rem', flexWrap: 'wrap' }}>
               <div style={{ display: 'flex', alignItems: 'center', background: 'rgba(255,255,255,0.02)', padding: '6px 12px', borderRadius: '20px', border: '1px solid var(--border-color)' }}>
                 <span className={`status-dot ${statuses.globale}`}></span>
-                Global PDB (Port 1524)
+                Global PDB (Port {scenario === 1 ? 1521 : 1524})
               </div>
               <div style={{ display: 'flex', alignItems: 'center', background: 'rgba(255,255,255,0.02)', padding: '6px 12px', borderRadius: '20px', border: '1px solid var(--border-color)' }}>
                 <span className={`status-dot ${statuses.site1}`}></span>
-                Site 1 (Port 1525)
+                Site 1 (Port {scenario === 1 ? 1522 : 1525})
               </div>
               <div style={{ display: 'flex', alignItems: 'center', background: 'rgba(255,255,255,0.02)', padding: '6px 12px', borderRadius: '20px', border: '1px solid var(--border-color)' }}>
                 <span className={`status-dot ${statuses.site2}`}></span>
-                Site 2 (Port 1526)
+                Site 2 (Port {scenario === 1 ? 1523 : 1526})
               </div>
             </div>
             
-            <button 
-              id="btn-refresh-status"
-              className="btn" 
-              onClick={fetchStatus} 
-              disabled={loadingStatus}
-              style={{ padding: '8px 12px' }}
-              title="Refresh DB Statuses"
-            >
-              <RefreshCw size={14} className={loadingStatus ? 'animate-spin' : ''} />
-            </button>
+            <div style={{ display: 'flex', gap: '8px' }}>
+              <button 
+                id="btn-refresh-data-header"
+                className="btn" 
+                onClick={fetchLatestData} 
+                disabled={loadingData}
+                style={{ padding: '8px 12px', fontSize: '0.8rem' }}
+              >
+                <RefreshCw size={12} className={loadingData ? 'animate-spin' : ''} style={{ marginRight: 4 }} /> Refresh Tables
+              </button>
+              <button 
+                id="btn-refresh-status-header"
+                className="btn" 
+                onClick={fetchStatus} 
+                disabled={loadingStatus}
+                style={{ padding: '8px 12px', fontSize: '0.8rem' }}
+              >
+                <RefreshCw size={12} className={loadingStatus ? 'animate-spin' : ''} style={{ marginRight: 4 }} /> Refresh Status
+              </button>
+            </div>
           </div>
         </div>
       </header>
@@ -182,7 +264,7 @@ export default function Dashboard() {
         {/* SECTION 1: ARCHITECTURE TOPOLOGY MAP */}
         <section className="glass-panel glow-card-global">
           <h2 style={{ fontSize: '1.1rem', fontWeight: 500, display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '16px' }}>
-            <Network size={18} color="#818cf8" /> Interactive Network Topology
+            <Network size={18} color="#818cf8" /> Topology: Scenario {scenario}
           </h2>
           
           <div style={{ position: 'relative', width: '100%', height: '240px', background: 'rgba(5,7,12,0.4)', borderRadius: '12px', border: '1px solid rgba(255,255,255,0.03)', overflow: 'hidden' }}>
@@ -212,8 +294,8 @@ export default function Dashboard() {
               <div style={{ display: 'inline-flex', padding: '12px', borderRadius: '50%', background: 'rgba(139, 92, 246, 0.15)', border: '1px solid rgba(139, 92, 246, 0.3)', boxShadow: '0 0 15px rgba(139, 92, 246, 0.2)', marginBottom: '6px' }}>
                 <Database size={24} color="#a78bfa" />
               </div>
-              <div style={{ fontSize: '0.85rem', fontWeight: 600 }}>globale-db-s2</div>
-              <div style={{ fontSize: '0.7rem', color: 'var(--text-muted)' }}>Port 1524 | ESHOP_GLOBALE</div>
+              <div style={{ fontSize: '0.85rem', fontWeight: 600 }}>globale-db{scenario === 2 ? '-s2' : ''}</div>
+              <div style={{ fontSize: '0.7rem', color: 'var(--text-muted)' }}>Port {scenario === 1 ? 1521 : 1524} | ESHOP_GLOBALE</div>
             </div>
 
             {/* Site 1 Node */}
@@ -221,8 +303,10 @@ export default function Dashboard() {
               <div style={{ display: 'inline-flex', padding: '12px', borderRadius: '50%', background: 'rgba(16, 185, 129, 0.15)', border: '1px solid rgba(16, 185, 129, 0.3)', boxShadow: '0 0 15px rgba(16, 185, 129, 0.2)', marginBottom: '6px' }}>
                 <Database size={24} color="#34d399" />
               </div>
-              <div style={{ fontSize: '0.85rem', fontWeight: 600 }}>site1-db-s2 (Wholesale)</div>
-              <div style={{ fontSize: '0.7rem', color: 'var(--text-muted)' }}>Port 1525 | Qty &ge; 100</div>
+              <div style={{ fontSize: '0.85rem', fontWeight: 600 }}>site1-db{scenario === 2 ? '-s2' : ''}</div>
+              <div style={{ fontSize: '0.7rem', color: 'var(--text-muted)' }}>
+                {scenario === 1 ? 'Category 50 & Qty > 100' : 'Wholesale Segment (Qty \u2265 100)'}
+              </div>
             </div>
 
             {/* Site 2 Node */}
@@ -230,17 +314,19 @@ export default function Dashboard() {
               <div style={{ display: 'inline-flex', padding: '12px', borderRadius: '50%', background: 'rgba(14, 165, 233, 0.15)', border: '1px solid rgba(14, 165, 233, 0.3)', boxShadow: '0 0 15px rgba(14, 165, 233, 0.2)', marginBottom: '6px' }}>
                 <Database size={24} color="#38bdf8" />
               </div>
-              <div style={{ fontSize: '0.85rem', fontWeight: 600 }}>site2-db-s2 (Retail)</div>
-              <div style={{ fontSize: '0.7rem', color: 'var(--text-muted)' }}>Port 1526 | Qty &lt; 100</div>
+              <div style={{ fontSize: '0.85rem', fontWeight: 600 }}>site2-db{scenario === 2 ? '-s2' : ''}</div>
+              <div style={{ fontSize: '0.7rem', color: 'var(--text-muted)' }}>
+                {scenario === 1 ? 'Category 35 & Qty > 50' : 'Retail Segment (Qty < 100)'}
+              </div>
             </div>
 
             {/* Overlay indicators */}
             <div style={{ position: 'absolute', top: '10px', left: '10px', display: 'flex', gap: '8px', fontSize: '0.65rem' }}>
               <span style={{ display: 'flex', alignItems: 'center', gap: '4px', background: 'rgba(255,255,255,0.05)', padding: '2px 6px', borderRadius: '4px' }}>
-                <span style={{ width: 6, height: 6, borderRadius: '50%', background: '#a78bfa' }}></span> trigger active
+                <span style={{ width: 6, height: 6, borderRadius: '50%', background: '#a78bfa' }}></span> trigger routing
               </span>
               <span style={{ display: 'flex', alignItems: 'center', gap: '4px', background: 'rgba(255,255,255,0.05)', padding: '2px 6px', borderRadius: '4px' }}>
-                <span style={{ width: 6, height: 6, borderRadius: '50%', background: '#f59e0b' }}></span> public dblinks
+                <span style={{ width: 6, height: 6, borderRadius: '50%', background: '#f59e0b' }}></span> active dblinks
               </span>
             </div>
 
@@ -248,9 +334,15 @@ export default function Dashboard() {
           
           <div style={{ display: 'flex', gap: '10px', background: 'rgba(255,255,255,0.02)', padding: '12px', borderRadius: '8px', border: '1px solid rgba(255,255,255,0.04)', fontSize: '0.78rem', color: 'var(--text-muted)', marginTop: '16px', lineHeight: '1.4' }}>
             <Info size={18} style={{ flexShrink: 0, marginTop: '2px', color: '#60a5fa' }} />
-            <div>
-              <strong>Replication Details</strong>: Row inserts into the global database trigger <strong>SYNC_INSERT_LIGNE</strong>, which decides to route rows to the corresponding database node based on <code>QUANTITE</code>. Deletions and updates also propagate dynamically.
-            </div>
+            {scenario === 1 ? (
+              <div>
+                <strong>Scenario 1 Fragmentation Rule</strong>: Rows are only copied to Site 1 (if the product is Category 50 and Qty &gt; 100) or to Site 2 (if the product is Category 35 and Qty &gt; 50). Other items are stored solely in the Global database.
+              </div>
+            ) : (
+              <div>
+                <strong>Scenario 2 Fragmentation Rule</strong>: Every row is routed to a local site based strictly on quantity. Site 1 gets wholesale volumes (Qty &ge; 100) and Site 2 gets retail volumes (Qty &lt; 100). No data is orphaned on the global layer.
+              </div>
+            )}
           </div>
         </section>
 
@@ -303,12 +395,24 @@ export default function Dashboard() {
                 </div>
                 <div>
                   <label style={{ fontSize: '0.75rem', color: 'var(--text-muted)', display: 'block', marginBottom: 4 }}>Product ID</label>
-                  <input 
+                  <select 
                     id="insert-id-produit"
-                    type="number" 
                     value={insertForm.id_produit} 
                     onChange={e => setInsertForm(p => ({ ...p, id_produit: e.target.value }))}
-                  />
+                  >
+                    {scenario === 1 ? (
+                      <>
+                        <option value="257">Product 257 (Category 50 - target Site 1)</option>
+                        <option value="149">Product 149 (Category 35 - target Site 2)</option>
+                        <option value="1">Product 1 (Category 1 - does not replicate)</option>
+                      </>
+                    ) : (
+                      <>
+                        <option value="149">Product 149 (Category 35)</option>
+                        <option value="257">Product 257 (Category 50)</option>
+                      </>
+                    )}
+                  </select>
                 </div>
                 <div>
                   <label style={{ fontSize: '0.75rem', color: 'var(--text-muted)', display: 'block', marginBottom: 4 }}>Quantity</label>
@@ -346,12 +450,14 @@ export default function Dashboard() {
                 </div>
                 <div>
                   <label style={{ fontSize: '0.75rem', color: 'var(--text-muted)', display: 'block', marginBottom: 4 }}>Product ID</label>
-                  <input 
+                  <select 
                     id="update-id-produit"
-                    type="number" 
                     value={updateForm.id_produit} 
                     onChange={e => setUpdateForm(p => ({ ...p, id_produit: e.target.value }))}
-                  />
+                  >
+                    <option value="149">Product 149 (Cat 35)</option>
+                    <option value="257">Product 257 (Cat 50)</option>
+                  </select>
                 </div>
                 <div>
                   <label style={{ fontSize: '0.75rem', color: 'var(--text-muted)', display: 'block', marginBottom: 4 }}>New Quantity</label>
@@ -423,7 +529,7 @@ export default function Dashboard() {
         <section className="glass-panel full-width">
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px' }}>
             <h2 style={{ fontSize: '1.1rem', fontWeight: 500, display: 'flex', alignItems: 'center', gap: '8px' }}>
-              <Database size={18} color="#34d399" /> Local Sites Data Explorer
+              <Database size={18} color="#34d399" /> Local Sites Data Explorer &mdash; Scenario {scenario}
             </h2>
             <button 
               id="btn-refresh-data"
@@ -440,9 +546,11 @@ export default function Dashboard() {
             <div style={{ border: '1px solid rgba(16, 185, 129, 0.15)', borderRadius: '10px', padding: '16px', background: 'rgba(16, 185, 129, 0.02)' }}>
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                 <h3 style={{ fontSize: '0.9rem', fontWeight: 500, color: '#34d399' }}>
-                  Site 1 (Wholesale DB) &mdash; LIGNES_COMMANDES_1
+                  Site 1 (DB Link SITE_1) &mdash; LIGNES_COMMANDES_1
                 </h3>
-                <span style={{ fontSize: '0.7rem', color: 'var(--text-muted)' }}>Filters: Qty &ge; 100</span>
+                <span style={{ fontSize: '0.7rem', color: 'var(--text-muted)' }}>
+                  {scenario === 1 ? 'Cat 50 & Qty > 100' : 'Filters: Qty \u2265 100'}
+                </span>
               </div>
               <div className="table-container">
                 <table>
@@ -459,7 +567,7 @@ export default function Dashboard() {
                     {tablesData.site1.length === 0 ? (
                       <tr>
                         <td colSpan="5" style={{ textAlign: 'center', color: 'var(--text-muted)' }}>
-                          No rows found in this partition.
+                          No rows found in this partition. (Ensure Docker containers on these ports are running)
                         </td>
                       </tr>
                     ) : (
@@ -482,9 +590,11 @@ export default function Dashboard() {
             <div style={{ border: '1px solid rgba(14, 165, 233, 0.15)', borderRadius: '10px', padding: '16px', background: 'rgba(14, 165, 233, 0.02)' }}>
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                 <h3 style={{ fontSize: '0.9rem', fontWeight: 500, color: '#38bdf8' }}>
-                  Site 2 (Retail DB) &mdash; LIGNES_COMMANDES_2
+                  Site 2 (DB Link SITE_2) &mdash; LIGNES_COMMANDES_2
                 </h3>
-                <span style={{ fontSize: '0.7rem', color: 'var(--text-muted)' }}>Filters: Qty &lt; 100</span>
+                <span style={{ fontSize: '0.7rem', color: 'var(--text-muted)' }}>
+                  {scenario === 1 ? 'Cat 35 & Qty > 50' : 'Filters: Qty < 100'}
+                </span>
               </div>
               <div className="table-container">
                 <table>
@@ -501,7 +611,7 @@ export default function Dashboard() {
                     {tablesData.site2.length === 0 ? (
                       <tr>
                         <td colSpan="5" style={{ textAlign: 'center', color: 'var(--text-muted)' }}>
-                          No rows found in this partition.
+                          No rows found in this partition. (Ensure Docker containers on these ports are running)
                         </td>
                       </tr>
                     ) : (
@@ -528,7 +638,7 @@ export default function Dashboard() {
             <TrendingUp size={18} color="#f59e0b" /> Distributed Analytics Query
           </h2>
           <p style={{ fontSize: '0.85rem', color: 'var(--text-muted)', marginBottom: '16px', lineHeight: '1.4' }}>
-            Executing a query to calculate the total revenue per product category in 2026. This queries both sites via DB Links and aggregates the results.
+            Executing the distributed query to calculate 2026 revenue per product category. Resolves data from Site 1 and Site 2.
           </p>
 
           <button 

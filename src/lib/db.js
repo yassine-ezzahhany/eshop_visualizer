@@ -10,36 +10,36 @@ try {
 const configs = {
   1: {
     globale: {
-      user: 'globale_user',
-      password: 'globale_password',
-      connectString: 'localhost:1521/ESHOP_GLOBALE_PDB'
+      user: process.env.DB_S1_GLOBALE_USER || 'globale_user',
+      password: process.env.DB_S1_GLOBALE_PASSWORD || 'globale_password',
+      connectString: process.env.DB_S1_GLOBALE_HOST || 'localhost:1521/ESHOP_GLOBALE_PDB'
     },
     site1: {
-      user: 'globale_user',
-      password: 'globale_password',
-      connectString: 'localhost:1522/ESHOP_SITE1_PDB'
+      user: process.env.DB_S1_SITE1_USER || 'globale_user',
+      password: process.env.DB_S1_SITE1_PASSWORD || 'globale_password',
+      connectString: process.env.DB_S1_SITE1_HOST || 'localhost:1522/ESHOP_SITE1_PDB'
     },
     site2: {
-      user: 'globale_user',
-      password: 'globale_password',
-      connectString: 'localhost:1523/ESHOP_SITE2_PDB'
+      user: process.env.DB_S1_SITE2_USER || 'globale_user',
+      password: process.env.DB_S1_SITE2_PASSWORD || 'globale_password',
+      connectString: process.env.DB_S1_SITE2_HOST || 'localhost:1523/ESHOP_SITE2_PDB'
     }
   },
   2: {
     globale: {
-      user: 'globale_user',
-      password: 'globale_password',
-      connectString: 'localhost:1524/ESHOP_GLOBALE_PDB'
+      user: process.env.DB_S2_GLOBALE_USER || 'globale_user',
+      password: process.env.DB_S2_GLOBALE_PASSWORD || 'globale_password',
+      connectString: process.env.DB_S2_GLOBALE_HOST || 'localhost:1524/ESHOP_GLOBALE_PDB'
     },
     site1: {
-      user: 'globale_user',
-      password: 'globale_password',
-      connectString: 'localhost:1525/ESHOP_SITE1_PDB'
+      user: process.env.DB_S2_SITE1_USER || 'globale_user',
+      password: process.env.DB_S2_SITE1_PASSWORD || 'globale_password',
+      connectString: process.env.DB_S2_SITE1_HOST || 'localhost:1525/ESHOP_SITE1_PDB'
     },
     site2: {
-      user: 'globale_user',
-      password: 'globale_password',
-      connectString: 'localhost:1526/ESHOP_SITE2_PDB'
+      user: process.env.DB_S2_SITE2_USER || 'globale_user',
+      password: process.env.DB_S2_SITE2_PASSWORD || 'globale_password',
+      connectString: process.env.DB_S2_SITE2_HOST || 'localhost:1526/ESHOP_SITE2_PDB'
     }
   }
 };
