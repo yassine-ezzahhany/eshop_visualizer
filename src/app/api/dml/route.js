@@ -34,15 +34,15 @@ export async function POST(req) {
       binds = [idLigne, idCmd, idProd, qte, rem];
       logs.push(`Envoi de l'INSERT à ESHOP_GLOBALE_PDB (Port ${sc === 1 ? 1521 : 1524})...`);
     } else if (action === 'update') {
-      if (isNaN(qte) || isNaN(rem) || isNaN(idProd)) {
-        return NextResponse.json({ success: false, error: 'L\'ID Produit, la quantité et la remise doivent être saisis.' }, { status: 400 });
+      if (isNaN(qte) || isNaN(rem)) {
+        return NextResponse.json({ success: false, error: 'La quantité et la remise doivent être saisis.' }, { status: 400 });
       }
       sql = `
         UPDATE LIGNES_COMMANDES 
-        SET QUANTITE = :qte, ID_PRODUIT = :idProd, REMISE = :rem
+        SET QUANTITE = :qte, REMISE = :rem
         WHERE ID_LIGNE_COMMANDE = :idLigne
       `;
-      binds = [qte, idProd, rem, idLigne];
+      binds = [qte, rem, idLigne];
       logs.push(`Envoi de l'UPDATE à ESHOP_GLOBALE_PDB (Port ${sc === 1 ? 1521 : 1524})...`);
     } else if (action === 'delete') {
       sql = `DELETE FROM LIGNES_COMMANDES WHERE ID_LIGNE_COMMANDE = :idLigne`;

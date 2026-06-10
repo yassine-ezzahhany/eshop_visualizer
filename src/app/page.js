@@ -23,7 +23,7 @@ export default function Dashboard() {
   
   // Forms states - dynamically adjusted when scenario changes
   const [insertForm, setInsertForm] = useState({ id_ligne_commande: '999960', id_commande: '167', id_produit: '257', quantite: '120', remise: '0.1' });
-  const [updateForm, setUpdateForm] = useState({ id_ligne_commande: '999960', id_produit: '257', quantite: '120', remise: '0.1' });
+  const [updateForm, setUpdateForm] = useState({ id_ligne_commande: '999960', quantite: '120', remise: '0.1' });
   const [deleteForm, setDeleteForm] = useState({ id_ligne_commande: '999960' });
   
   const [dmlLoading, setDmlLoading] = useState(false);
@@ -53,7 +53,7 @@ export default function Dashboard() {
         'Saisissez des valeurs ci-dessus pour tester. Note : Le produit 257 est de Cat 50. Le produit 149 est de Cat 35.'
       ]);
       setInsertForm({ id_ligne_commande: '999960', id_commande: '167', id_produit: '257', quantite: '120', remise: '0.1' });
-      setUpdateForm({ id_ligne_commande: '999960', id_produit: '257', quantite: '120', remise: '0.1' });
+      setUpdateForm({ id_ligne_commande: '999960', quantite: '120', remise: '0.1' });
       setDeleteForm({ id_ligne_commande: '999960' });
     } else {
       setDmlLogs([
@@ -63,7 +63,7 @@ export default function Dashboard() {
         'Toutes les lignes sont routées dynamiquement vers l\'un des sites locaux.'
       ]);
       setInsertForm({ id_ligne_commande: '999960', id_commande: '167', id_produit: '149', quantite: '150', remise: '0.1' });
-      setUpdateForm({ id_ligne_commande: '999960', id_produit: '149', quantite: '30', remise: '0.1' });
+      setUpdateForm({ id_ligne_commande: '999960', quantite: '30', remise: '0.1' });
       setDeleteForm({ id_ligne_commande: '999960' });
     }
   }, [scenario]);
@@ -439,7 +439,7 @@ export default function Dashboard() {
             {/* UPDATE FORM */}
             {activeTab === 'update' && (
               <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px' }}>
-                <div>
+                <div style={{ gridColumn: 'span 2' }}>
                   <label style={{ fontSize: '0.75rem', color: 'var(--text-muted)', display: 'block', marginBottom: 4 }}>ID Ligne Cible</label>
                   <input 
                     id="update-id-ligne"
@@ -447,17 +447,6 @@ export default function Dashboard() {
                     value={updateForm.id_ligne_commande} 
                     onChange={e => setUpdateForm(p => ({ ...p, id_ligne_commande: e.target.value }))}
                   />
-                </div>
-                <div>
-                  <label style={{ fontSize: '0.75rem', color: 'var(--text-muted)', display: 'block', marginBottom: 4 }}>ID Produit</label>
-                  <select 
-                    id="update-id-produit"
-                    value={updateForm.id_produit} 
-                    onChange={e => setUpdateForm(p => ({ ...p, id_produit: e.target.value }))}
-                  >
-                    <option value="149">Produit 149 (Cat 35)</option>
-                    <option value="257">Produit 257 (Cat 50)</option>
-                  </select>
                 </div>
                 <div>
                   <label style={{ fontSize: '0.75rem', color: 'var(--text-muted)', display: 'block', marginBottom: 4 }}>Nouvelle Quantité</label>
