@@ -1,4 +1,5 @@
 const oracledb = require('oracledb');
+const dns = require('dns').promises;
 
 // Enable Thin Mode
 try {
@@ -8,18 +9,52 @@ try {
 }
 
 /**
+ * Resolves a hostname to its IPv4 address to avoid IPv6 connection issues (like EADDRNOTAVAIL on Vercel).
+ * @param {string} connectString 
+ */
+async function resolveHostToIPv4(connectString) {
+  let host = connectString;
+  let remainder = '';
+  
+  const colonIndex = connectString.indexOf(':');
+  const slashIndex = connectString.indexOf('/');
+  
+  if (colonIndex !== -1) {
+    host = connectString.substring(0, colonIndex);
+    remainder = connectString.substring(colonIndex);
+  } else if (slashIndex !== -1) {
+    host = connectString.substring(0, slashIndex);
+    remainder = connectString.substring(slashIndex);
+  }
+  
+  try {
+    if (host === 'localhost' || host === '127.0.0.1') {
+      return connectString;
+    }
+    
+    // Force IPv4 address resolution
+    const result = await dns.lookup(host, { family: 4 });
+    console.log(`Resolved hostname "${host}" to IPv4: ${result.address}`);
+    return result.address + remainder;
+  } catch (err) {
+    console.error(`Failed to resolve DNS for hostname "${host}" to IPv4:`, err.message);
+    return connectString; // fallback to original
+  }
+}
+
+/**
  * Retrieves database configuration from environment variables.
  * Throws an exception if any required variable is missing.
  * @param {1 | 2} scenario 
  * @param {'globale' | 'site1' | 'site2'} target 
  */
-function getDbConfig(scenario, target) {
+async function getDbConfig(scenario, target) {
   const sc = (scenario === 1 || scenario === '1') ? 1 : 2;
   const prefix = `DB_S${sc}_${target.toUpperCase()}`;
   
   const user = process.env[`${prefix}_USER`];
   const password = process.env[`${prefix}_PASSWORD`];
-  const connectString = process.env[`${prefix}_HOST`];
+  let connectString = process.env[`${prefix}_HOST`];
   
   if (!user || !password || !connectString) {
     throw new Error(
@@ -27,6 +62,9 @@ function getDbConfig(scenario, target) {
       `Please define ${prefix}_USER, ${prefix}_PASSWORD, and ${prefix}_HOST in your environment.`
     );
   }
+  
+  // Resolve host to IPv4 to prevent IPv6 EADDRNOTAVAIL issues on Vercel
+  connectString = await resolveHostToIPv4(connectString);
   
   return { user, password, connectString };
 }
@@ -42,7 +80,7 @@ function getDbConfig(scenario, target) {
 async function executeQuery(scenario, target, sql, binds = [], options = { autoCommit: true, outFormat: oracledb.OUT_FORMAT_OBJECT }) {
   let connection;
   try {
-    const dbConfig = getDbConfig(scenario, target);
+    const dbConfig = await getDbConfig(scenario, target);
     connection = await oracledb.getConnection(dbConfig);
     const result = await connection.execute(sql, binds, options);
     return { success: true, data: result.rows || [], affectedRows: result.rowsAffected };
@@ -70,7 +108,7 @@ async function getStatus(scenario) {
   for (const target of ['globale', 'site1', 'site2']) {
     let connection;
     try {
-      const dbConfig = getDbConfig(scenario, target);
+      const dbConfig = await getDbConfig(scenario, target);
       connection = await oracledb.getConnection(dbConfig);
       await connection.execute('SELECT 1 FROM DUAL');
       statuses[target] = 'online';
