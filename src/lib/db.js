@@ -66,6 +66,7 @@ async function executeQuery(scenario, target, sql, binds = [], options = { autoC
  */
 async function getStatus(scenario) {
   const statuses = {};
+  const errors = {};
   for (const target of ['globale', 'site1', 'site2']) {
     let connection;
     try {
@@ -76,6 +77,7 @@ async function getStatus(scenario) {
     } catch (e) {
       console.error(`Status check failed for [${target}] in scenario [${scenario}]:`, e.message);
       statuses[target] = 'offline';
+      errors[target] = e.message;
     } finally {
       if (connection) {
         try {
@@ -84,7 +86,7 @@ async function getStatus(scenario) {
       }
     }
   }
-  return statuses;
+  return { statuses, errors };
 }
 
 module.exports = {
