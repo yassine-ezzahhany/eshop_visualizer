@@ -7,42 +7,29 @@ try {
   // Swallowed: thin by default in newer node-oracledb
 }
 
-const configs = {
-  1: {
-    globale: {
-      user: process.env.DB_S1_GLOBALE_USER || 'globale_user',
-      password: process.env.DB_S1_GLOBALE_PASSWORD || 'globale_password',
-      connectString: process.env.DB_S1_GLOBALE_HOST || 'localhost:1521/ESHOP_GLOBALE_PDB'
-    },
-    site1: {
-      user: process.env.DB_S1_SITE1_USER || 'globale_user',
-      password: process.env.DB_S1_SITE1_PASSWORD || 'globale_password',
-      connectString: process.env.DB_S1_SITE1_HOST || 'localhost:1522/ESHOP_SITE1_PDB'
-    },
-    site2: {
-      user: process.env.DB_S1_SITE2_USER || 'globale_user',
-      password: process.env.DB_S1_SITE2_PASSWORD || 'globale_password',
-      connectString: process.env.DB_S1_SITE2_HOST || 'localhost:1523/ESHOP_SITE2_PDB'
-    }
-  },
-  2: {
-    globale: {
-      user: process.env.DB_S2_GLOBALE_USER || 'globale_user',
-      password: process.env.DB_S2_GLOBALE_PASSWORD || 'globale_password',
-      connectString: process.env.DB_S2_GLOBALE_HOST || 'localhost:1524/ESHOP_GLOBALE_PDB'
-    },
-    site1: {
-      user: process.env.DB_S2_SITE1_USER || 'globale_user',
-      password: process.env.DB_S2_SITE1_PASSWORD || 'globale_password',
-      connectString: process.env.DB_S2_SITE1_HOST || 'localhost:1525/ESHOP_SITE1_PDB'
-    },
-    site2: {
-      user: process.env.DB_S2_SITE2_USER || 'globale_user',
-      password: process.env.DB_S2_SITE2_PASSWORD || 'globale_password',
-      connectString: process.env.DB_S2_SITE2_HOST || 'localhost:1526/ESHOP_SITE2_PDB'
-    }
+/**
+ * Retrieves database configuration from environment variables.
+ * Throws an exception if any required variable is missing.
+ * @param {1 | 2} scenario 
+ * @param {'globale' | 'site1' | 'site2'} target 
+ */
+function getDbConfig(scenario, target) {
+  const sc = (scenario === 1 || scenario === '1') ? 1 : 2;
+  const prefix = `DB_S${sc}_${target.toUpperCase()}`;
+  
+  const user = process.env[`${prefix}_USER`];
+  const password = process.env[`${prefix}_PASSWORD`];
+  const connectString = process.env[`${prefix}_HOST`];
+  
+  if (!user || !password || !connectString) {
+    throw new Error(
+      `Missing required environment variables for Scenario ${sc}, Target ${target}. ` +
+      `Please define ${prefix}_USER, ${prefix}_PASSWORD, and ${prefix}_HOST in your environment.`
+    );
   }
-};
+  
+  return { user, password, connectString };
+}
 
 /**
  * Execute SQL query on a specific database target and scenario
@@ -55,11 +42,7 @@ const configs = {
 async function executeQuery(scenario, target, sql, binds = [], options = { autoCommit: true, outFormat: oracledb.OUT_FORMAT_OBJECT }) {
   let connection;
   try {
-    const sc = (scenario === 1 || scenario === '1') ? 1 : 2;
-    const dbConfig = configs[sc][target];
-    if (!dbConfig) {
-      throw new Error(`Invalid target: ${target} for scenario ${sc}`);
-    }
+    const dbConfig = getDbConfig(scenario, target);
     connection = await oracledb.getConnection(dbConfig);
     const result = await connection.execute(sql, binds, options);
     return { success: true, data: result.rows || [], affectedRows: result.rowsAffected };
@@ -82,16 +65,16 @@ async function executeQuery(scenario, target, sql, binds = [], options = { autoC
  * @param {1 | 2} scenario
  */
 async function getStatus(scenario) {
-  const sc = (scenario === 1 || scenario === '1') ? 1 : 2;
   const statuses = {};
   for (const target of ['globale', 'site1', 'site2']) {
     let connection;
     try {
-      const dbConfig = configs[sc][target];
+      const dbConfig = getDbConfig(scenario, target);
       connection = await oracledb.getConnection(dbConfig);
       await connection.execute('SELECT 1 FROM DUAL');
       statuses[target] = 'online';
     } catch (e) {
+      console.error(`Status check failed for [${target}] in scenario [${scenario}]:`, e.message);
       statuses[target] = 'offline';
     } finally {
       if (connection) {
