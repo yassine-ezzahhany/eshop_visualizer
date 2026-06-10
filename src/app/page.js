@@ -131,10 +131,9 @@ export default function Dashboard() {
         setLastRoutedTo(result.routedTo || 'none');
         // Auto-increment Line ID
         if (activeTab === 'insert') {
-          const nextId = parseInt(insertForm.id_ligne_commande) + 1;
-          setInsertForm(prev => ({ ...prev, id_ligne_commande: nextId.toString() }));
-          setUpdateForm(prev => ({ ...prev, id_ligne_commande: (nextId - 1).toString() }));
-          setDeleteForm({ id_ligne_commande: (nextId - 1).toString() });
+          const generatedId = result.id_ligne_commande || (parseInt(insertForm.id_ligne_commande) + 1);
+          setUpdateForm(prev => ({ ...prev, id_ligne_commande: generatedId.toString() }));
+          setDeleteForm({ id_ligne_commande: generatedId.toString() });
         }
         fetchLatestData();
       } else {
@@ -376,12 +375,13 @@ export default function Dashboard() {
             {activeTab === 'insert' && (
               <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px' }}>
                 <div>
-                  <label style={{ fontSize: '0.75rem', color: 'var(--text-muted)', display: 'block', marginBottom: 4 }}>ID Ligne</label>
+                  <label style={{ fontSize: '0.75rem', color: 'var(--text-muted)', display: 'block', marginBottom: 4 }}>ID Ligne (Auto-généré)</label>
                   <input 
                     id="insert-id-ligne"
-                    type="number" 
-                    value={insertForm.id_ligne_commande} 
-                    onChange={e => setInsertForm(p => ({ ...p, id_ligne_commande: e.target.value }))}
+                    type="text" 
+                    value="Généré par séquence" 
+                    disabled
+                    style={{ opacity: 0.6, cursor: 'not-allowed', background: 'rgba(255,255,255,0.03)' }}
                   />
                 </div>
                 <div>

@@ -7,13 +7,13 @@ export async function POST(req) {
     const { action, scenario, id_ligne_commande, id_commande, id_produit, quantite, remise } = body;
 
     const sc = (scenario === 1 || scenario === '1') ? 1 : 2;
-    const idLigne = parseInt(id_ligne_commande);
+    let idLigne = parseInt(id_ligne_commande);
     const idCmd = parseInt(id_commande);
     const idProd = parseInt(id_produit);
     const qte = parseInt(quantite);
     const rem = parseFloat(remise);
 
-    if (isNaN(idLigne) || idLigne <= 0) {
+    if (action !== 'insert' && (isNaN(idLigne) || idLigne <= 0)) {
       return NextResponse.json({ success: false, error: 'Identifiant ID_LIGNE_COMMANDE invalide.' }, { status: 400 });
     }
 
@@ -21,19 +21,33 @@ export async function POST(req) {
     let binds = [];
     let logs = [];
 
-    logs.push(`[Scénario ${sc}] Action ${action.toUpperCase()} initiée pour l'ID Ligne : ${idLigne}`);
-
     if (action === 'insert') {
       if (isNaN(idCmd) || isNaN(idProd) || isNaN(qte) || isNaN(rem)) {
         return NextResponse.json({ success: false, error: 'Tous les champs doivent être saisis et valides pour une insertion.' }, { status: 400 });
       }
+
+      // Retrieve the next sequence value from the global database
+      const seqRes = await db.executeQuery(sc, 'globale', "SELECT LIGNES_COMMANDES_SEQ.NEXTVAL AS SEQ FROM DUAL");
+      if (seqRes.success && seqRes.data.length > 0) {
+        idLigne = seqRes.data[0].SEQ;
+        logs.push(`ID de ligne généré par la séquence (LIGNES_COMMANDES_SEQ) : ${idLigne}`);
+      } else {
+        return NextResponse.json({ success: false, error: 'Impossible de générer l\'ID depuis la séquence.', logs }, { status: 500 });
+      }
+
+      logs.push(`[Scénario ${sc}] Action INSERT initiée pour l'ID Ligne : ${idLigne}`);
+
       sql = `
         INSERT INTO LIGNES_COMMANDES (ID_LIGNE_COMMANDE, ID_COMMANDE, ID_PRODUIT, QUANTITE, REMISE)
         VALUES (:idLigne, :idCmd, :idProd, :qte, :rem)
       `;
       binds = [idLigne, idCmd, idProd, qte, rem];
       logs.push(`Envoi de l'INSERT à ESHOP_GLOBALE_PDB (Port ${sc === 1 ? 1521 : 1524})...`);
-    } else if (action === 'update') {
+    } else {
+      logs.push(`[Scénario ${sc}] Action ${action.toUpperCase()} initiée pour l'ID Ligne : ${idLigne}`);
+    }
+
+    if (action === 'update') {
       if (isNaN(qte) || isNaN(rem)) {
         return NextResponse.json({ success: false, error: 'La quantité et la remise doivent être saisis.' }, { status: 400 });
       }
@@ -106,7 +120,8 @@ export async function POST(req) {
     return NextResponse.json({
       success: true,
       routedTo,
-      logs
+      logs,
+      id_ligne_commande: idLigne
     });
 
   } catch (error) {
