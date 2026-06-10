@@ -37,10 +37,15 @@ export default function Dashboard() {
   const [queryLoading, setQueryLoading] = useState(false);
   const [queryError, setQueryError] = useState(null);
 
-  // Load database statuses and tables when scenario changes
+  // Dropdown options states
+  const [availableProducts, setAvailableProducts] = useState([]);
+  const [availableOrders, setAvailableOrders] = useState([]);
+
+  // Load database statuses, tables, and options when scenario changes
   useEffect(() => {
     fetchStatus();
     fetchLatestData();
+    fetchOptions();
     setQueryData([]);
     setLastRoutedTo('none');
     
@@ -67,6 +72,39 @@ export default function Dashboard() {
       setDeleteForm({ id_ligne_commande: '999960' });
     }
   }, [scenario]);
+
+  const fetchOptions = async () => {
+    try {
+      const res = await fetch(`/api/options?scenario=${scenario}`);
+      const data = await res.json();
+      if (data.success) {
+        setAvailableProducts(data.products);
+        setAvailableOrders(data.orders);
+        
+        // Pick smart defaults if they exist in the returned lists
+        const hasOrder167 = data.orders.some(o => o.ID_COMMANDE === 167);
+        const defaultOrder = hasOrder167 ? '167' : (data.orders.length > 0 ? data.orders[0].ID_COMMANDE.toString() : '167');
+        
+        const hasProduct257 = data.products.some(p => p.ID_PRODUIT === 257);
+        const hasProduct149 = data.products.some(p => p.ID_PRODUIT === 149);
+        
+        let defaultProduct = '257';
+        if (scenario === 1) {
+          defaultProduct = hasProduct257 ? '257' : (data.products.length > 0 ? data.products[0].ID_PRODUIT.toString() : '257');
+        } else {
+          defaultProduct = hasProduct149 ? '149' : (data.products.length > 0 ? data.products[0].ID_PRODUIT.toString() : '149');
+        }
+        
+        setInsertForm(prev => ({
+          ...prev,
+          id_commande: defaultOrder,
+          id_produit: defaultProduct
+        }));
+      }
+    } catch (err) {
+      console.error('Failed to fetch dropdown options:', err);
+    }
+  };
 
   const fetchStatus = async () => {
     setLoadingStatus(true);
@@ -386,12 +424,21 @@ export default function Dashboard() {
                 </div>
                 <div>
                   <label style={{ fontSize: '0.75rem', color: 'var(--text-muted)', display: 'block', marginBottom: 4 }}>ID Commande</label>
-                  <input 
+                  <select 
                     id="insert-id-commande"
-                    type="number" 
                     value={insertForm.id_commande} 
                     onChange={e => setInsertForm(p => ({ ...p, id_commande: e.target.value }))}
-                  />
+                  >
+                    {availableOrders.length === 0 ? (
+                      <option value="">Chargement des commandes...</option>
+                    ) : (
+                      availableOrders.map(o => (
+                        <option key={o.ID_COMMANDE} value={o.ID_COMMANDE.toString()}>
+                          Commande {o.ID_COMMANDE}
+                        </option>
+                      ))
+                    )}
+                  </select>
                 </div>
                 <div>
                   <label style={{ fontSize: '0.75rem', color: 'var(--text-muted)', display: 'block', marginBottom: 4 }}>ID Produit</label>
@@ -400,17 +447,24 @@ export default function Dashboard() {
                     value={insertForm.id_produit} 
                     onChange={e => setInsertForm(p => ({ ...p, id_produit: e.target.value }))}
                   >
-                    {scenario === 1 ? (
-                      <>
-                        <option value="257">Produit 257 (Catégorie 50 - cible Site 1)</option>
-                        <option value="149">Produit 149 (Catégorie 35 - cible Site 2)</option>
-                        <option value="1">Produit 1 (Catégorie 1 - pas de réplication)</option>
-                      </>
+                    {availableProducts.length === 0 ? (
+                      <option value="">Chargement des produits...</option>
                     ) : (
-                      <>
-                        <option value="149">Produit 149 (Catégorie 35)</option>
-                        <option value="257">Produit 257 (Catégorie 50)</option>
-                      </>
+                      availableProducts.map(p => {
+                        let targetText = '';
+                        if (scenario === 1) {
+                          if (p.ID_CATEGORIE === 50) targetText = ' (Cat 50 - cible Site 1)';
+                          else if (p.ID_CATEGORIE === 35) targetText = ' (Cat 35 - cible Site 2)';
+                          else targetText = ' (Pas de réplication)';
+                        } else {
+                          targetText = ` (Cat ${p.ID_CATEGORIE})`;
+                        }
+                        return (
+                          <option key={p.ID_PRODUIT} value={p.ID_PRODUIT.toString()}>
+                            {p.DESIGNATION} (ID {p.ID_PRODUIT}){targetText}
+                          </option>
+                        );
+                      })
                     )}
                   </select>
                 </div>
